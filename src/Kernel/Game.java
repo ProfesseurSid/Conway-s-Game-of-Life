@@ -2,6 +2,11 @@ package Kernel;
 
 import java.util.ArrayList;
 
+/**
+ * @brief The core of Conway's Game of Life
+ * @author CHANET Zoran
+ *
+ */
 public class Game {
 	private int nbC;
 	private int nbL;

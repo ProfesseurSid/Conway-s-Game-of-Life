@@ -6,14 +6,15 @@ import UI.Visual;
 import javafx.animation.AnimationTimer;
 
 /**
- * Goes one step forward in the game
- * @author drzed
+ * @brief The timer that forwards the game step by step
+ * @author CHANET Zoran
  *
  */
 public class Timer extends AnimationTimer {
 	private double step;
 	private Game game;
 	private long lastTime = new Date().getTime();
+	private boolean running;
 	
 	/**
 	 * Instanciates the Timer with a given timestep to use on a given game
@@ -23,6 +24,19 @@ public class Timer extends AnimationTimer {
 	public Timer(Game game, double step) {
 		this.step = step;
 		this.game = game;
+		running = false;
+	}
+	
+	@Override
+	public void start() {
+		running = true;
+		super.start();
+	}
+	
+	@Override
+	public void stop() {
+		running = false;
+		super.stop();
 	}
 	
 	@Override
@@ -46,4 +60,7 @@ public class Timer extends AnimationTimer {
 		game = newGame;
 	}
 
+	public boolean isRunning() {
+		return running;
+	}
 }

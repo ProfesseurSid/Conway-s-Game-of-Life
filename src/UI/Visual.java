@@ -1,9 +1,7 @@
 package UI;
 
 import java.util.ArrayList;
-
 import com.sun.glass.ui.Screen;
-
 import Kernel.Game;
 import Kernel.Timer;
 import javafx.application.Application;
@@ -21,7 +19,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -30,6 +27,11 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+/**
+ * @brief Main class, creating the graphic interface of the application
+ * @author CHANET Zoran
+ *
+ */
 public class Visual extends Application {
 	private static Stage stage;
 	private static BorderPane fenetre;
@@ -38,13 +40,18 @@ public class Visual extends Application {
 	private static Scene scene;
 	private static Group root;
 	private static double dimX;
+	/* "Fake" variable = boards will be squares */
 	private static double dimY;
+	
+	/* Components of the game */
 	private static Game game;
 	private static Timer timer;
 	private static int nbPH = 50;
 	private static int nbPV = 50;
 	private static Rectangle[][] PixList;
 	private static double proba = 0.5;
+	
+	/* Game speed constants */
 	private static final int ULTRASMOOTH = 1;
 	private static final int SMOOTHER = 10;
 	private static final int SMOOTH = 100;
@@ -52,6 +59,7 @@ public class Visual extends Application {
 	private static final int NORMAL = 1000;
 	private static final int SLOW = 2000;
 	private static int speed = NORMAL;
+	
 	private static Text score;
 	private static Button pauseButton;
 	private static Button restartButton;
@@ -66,11 +74,16 @@ public class Visual extends Application {
 	private static HBox getters;
 	private static Button colorButton;
 	private static Button helpButton;
+	
+	/* Pixels and graph color */
 	private static Color aliveColor = Color.BLUE;
 	private static Color deadColor = Color.RED;
+	
+	/* Used to change the color */
 	private static int nbColorSets = 5;
 	private static int colorSet = 0;
 	
+	/* Used for statistics */
 	private static ArrayList<Rectangle> plot;
 	private static Pane plotWindow;
 	private static Color graphColor;
@@ -83,46 +96,60 @@ public class Visual extends Application {
 	
 	private static MenuBar menus;
 	
+	/**
+	 * Used to start the application
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		Application.launch(Visual.class, args);
 	}
 	
+	/**
+	 * Creating the stage
+	 */
 	public void start(Stage stage) {
 		this.stage = stage;
 		stage.setTitle("Conway's Game of Life");
 		plot = new ArrayList<Rectangle>();
-		restart(stage);
+		game = new Game(nbPV, nbPH, proba);
+		timer = new Timer(game, speed);
+		createFields();
+		restart();
 	}
 	
+	/**
+	 * Used to restart the game when needed, in the given stage 
+	 * @param stage the given stage
+	 */
 	public static void restart(Stage stage) {
-		firstLaunch = true;
-		pixSize = 10;
-		if(nbPH > 600) {
-			nbPH = 600;
-			nbPV = 600;
+		
+	}
+	
+	/**
+	 * Displays the game updating the color of every pixel
+	 * according to the game data
+	 */
+	public static void displayGame() {
+		boolean[][] board = game.getBoard();
+		int blue = game.countAlive();
+		
+		for(int i=0; i<nbPV; i++) {
+			for(int j=0; j<nbPH; j++) {
+				if(board[i][j])
+					PixList[i][j].setFill(aliveColor);
+				else
+					PixList[i][j].setFill(deadColor);
+			}
 		}
 		
+		score.setText("Step " + game.getNbSteps() + " alive : " + blue + " " + "dead : " + (nbPV*nbPH-blue));
+	}
+	
+	/**
+	 * Creates every field of the Visual
+	 */
+	public static void createFields() {
 		plotWindow = new Pane();
-		plotWindow.setMinWidth(dimX);
-		
-		plot.clear();
-		graphOOB = false;
-		countedSteps = 0;
-		maxCounted = 0;
-		
-		if(pixSize*nbPV > Screen.getMainScreen().getHeight()-80)
-			pixSize = (Screen.getMainScreen().getHeight()-80)/nbPV;
-		if(pixSize*nbPH > Screen.getMainScreen().getWidth())
-			pixSize = Math.min(pixSize, (Screen.getMainScreen().getWidth())/nbPH);
-		dimX = nbPH*pixSize;
-		
-		
-		dimY = nbPV*pixSize+30;
-		PixList = new Rectangle[nbPV][nbPH];
-		game = new Game(nbPV, nbPH, proba);
-		displayGraph();
-		
-		timer = new Timer(game, speed);
 		
 		XGetter = new TextField(""+nbPH);
 		XGetter.setOnAction(new EventHandler<ActionEvent>() {
@@ -130,22 +157,24 @@ public class Visual extends Application {
 				restart();
 			}
 		});
-		XGetter.setMaxWidth(55);
+		
 		PGetter = new TextField(""+proba);
 		PGetter.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				restart();
 			}
 		});
-		PGetter.setMaxWidth(55);
+		
 		getters = new HBox();
-		getters.getChildren().add(XGetter);
-		getters.getChildren().add(PGetter);
 		
 		settings = new HBox();
+		
 		fenetre = new BorderPane();
+		
 		layout = new BorderPane();
+		
 		jeu = new Pane();
+		
 		score = new Text();
 		
 		restartButton = new Button("Start");
@@ -155,13 +184,12 @@ public class Visual extends Application {
 					if(nbPH != Integer.valueOf(XGetter.getText()) || proba != Double.valueOf(PGetter.getText())) {
 						restart();
 					} else if(!firstLaunch) {
-						timer.stop();
-						game.newGame(nbPV, nbPH, proba);
-						timer.updateGame(game);
-						displayGame();
 						restartButton.setText("Start");
 						firstLaunch = true;
+						pause = false;
+						pauseButton.setText(" pause");
 						pauseButton.setDisable(true);
+						restart();
 					} else {
 						restartButton.setText("Reset");
 						pauseButton.setDisable(false);
@@ -175,22 +203,21 @@ public class Visual extends Application {
 			}
 		});
 		restartButton.setCancelButton(true);
+		
 		fasterButton = new Button("faster");
 		fasterButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				faster();
 			}
 		});
-		if(speed == ULTRASMOOTH)
-			fasterButton.setDisable(true);
+		
 		slowerButton = new Button("slower");
 		slowerButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				slower();
 			}
 		});
-		if(speed == SLOW)
-			slowerButton.setDisable(true);
+		
 		pauseButton = new Button(" pause");
 		pauseButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
@@ -207,18 +234,21 @@ public class Visual extends Application {
 		});
 		pauseButton.setDisable(true);
 		pauseButton.setDefaultButton(true);
+		
 		colorButton = new Button("color");
 		colorButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				changeColor(1);
 			}
 		});
+		
 		helpButton = new Button("?");
 		helpButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				displayHelp();
 			}
 		});
+		
 		graphButton = new Button("Graph");
 		graphButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
@@ -236,112 +266,22 @@ public class Visual extends Application {
 					
 			}
 		});
+	}
+	
+	/**
+	 * putting every bloc into place
+	 */
+	public static void createWindow() {
+		plotWindow.setMinWidth(dimX);
+		stage.setMinWidth(dimX);
+		stage.setMinHeight(dimY);
+		stage.setMaxWidth((dimX>layout.getWidth()?dimX:layout.getWidth()));
+		stage.setMaxHeight(dimY);
+		XGetter.setMaxWidth(55);
+		PGetter.setMaxWidth(55);
 		
-		for(int i=0; i<nbPV; i++) {
-			for(int j=0; j<nbPH; j++) {
-				Rectangle r = new Rectangle();
-				r.setX(j*pixSize);
-				r.setY(i*pixSize);
-				r.setWidth(pixSize);
-				r.setHeight(pixSize);
-				r.setFill(Color.BLUE);
-				r.setId(""+i+" "+j);
-				r.addEventHandler(MouseEvent.ANY, new EventHandler<MouseEvent>() {
-					public void handle(MouseEvent e) {
-						if(e.getEventType() == MouseEvent.MOUSE_CLICKED && e.getButton() == MouseButton.PRIMARY) { 
-							if(r.getFill() == aliveColor) {
-								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize, false);
-								displayGame();
-							} else {
-								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize, true);
-								displayGame();
-							}
-						} else if(e.isSecondaryButtonDown()) { 
-							/* Forme de U */
-//							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize > 0)
-//								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize-1, true);
-//							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize > 0)
-//								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize-1, true);
-//							if((int)r.getX()/pixSize > 0)
-//								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize, true);
-//							if((int)r.getX()/pixSize < nbPH-1)
-//								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize, true);
-//							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize < nbPH-1)
-//								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize+1, true);
-//							if((int)r.getY()/pixSize < nbPH-1)
-//								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize+1, true);
-//							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize < nbPH-1)
-//								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize+1, true);
-							
-							/* Space Invader */
-							if((int)r.getX()/pixSize > 3 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize-4, (int)r.getY()/pixSize+2, true);
-							if((int)r.getX()/pixSize > 2 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize-3, (int)r.getY()/pixSize+2, true);
-							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize+2, true);
-							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize+2, true);
-							if((int)r.getX()/pixSize < nbPH-3 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize+3, (int)r.getY()/pixSize+2, true);
-							if((int)r.getX()/pixSize < nbPH-4 && (int)r.getY()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize+4, (int)r.getY()/pixSize+2, true);
-							
-							if((int)r.getX()/pixSize > 2 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize-3, (int)r.getY()/pixSize+1, true);
-							if((int)r.getX()/pixSize > 1 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize-2, (int)r.getY()/pixSize+1, true);
-							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize+1, true);
-							if((int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize+1, true);
-							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize+1, true);
-							if((int)r.getX()/pixSize < nbPH-2 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize+2, (int)r.getY()/pixSize+1, true);
-							if((int)r.getX()/pixSize < nbPH-3 && (int)r.getY()/pixSize < nbPH-1)
-								game.setPix((int)r.getX()/pixSize+3, (int)r.getY()/pixSize+1, true);
-							
-							if((int)r.getX()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize-2, (int)r.getY()/pixSize, true);
-							game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize, true);
-							if((int)r.getX()/pixSize < nbPH-2)
-								game.setPix((int)r.getX()/pixSize+2, (int)r.getY()/pixSize, true);
-							
-							if((int)r.getX()/pixSize > 1 && (int)r.getY()/pixSize > 0)
-								game.setPix((int)r.getX()/pixSize-2, (int)r.getY()/pixSize-1, true);
-							if((int)r.getY()/pixSize > 0)
-								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize-1, true);
-							if((int)r.getX()/pixSize < nbPH-2 && (int)r.getY()/pixSize > 0)
-								game.setPix((int)r.getX()/pixSize+2, (int)r.getY()/pixSize-1, true);
-							
-							if((int)r.getX()/pixSize > 1 && (int)r.getY()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize-2, (int)r.getY()/pixSize-2, true);
-							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize-2, true);
-							if((int)r.getY()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize, (int)r.getY()/pixSize-2, true);
-							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize-2, true);
-							if((int)r.getX()/pixSize < nbPH-2 && (int)r.getY()/pixSize > 1)
-								game.setPix((int)r.getX()/pixSize+2, (int)r.getY()/pixSize-2, true);
-							
-							if((int)r.getX()/pixSize > 0 && (int)r.getY()/pixSize > 2)
-								game.setPix((int)r.getX()/pixSize-1, (int)r.getY()/pixSize-3, true);
-							if((int)r.getX()/pixSize < nbPH-1 && (int)r.getY()/pixSize > 2)
-								game.setPix((int)r.getX()/pixSize+1, (int)r.getY()/pixSize-3, true);
-							
-							displayGame();
-						} else if(e.getEventType() == MouseEvent.MOUSE_DRAGGED && e.getButton() == MouseButton.PRIMARY) {
-							game.setPix((int)e.getX()/pixSize, (int)e.getY()/pixSize, true);
-							displayGame();
-						}
-					}
-				});
-				PixList[i][j] = r;
-				jeu.getChildren().add(PixList[i][j]);
-			}
-		}
+		getters.getChildren().add(XGetter);
+		getters.getChildren().add(PGetter);
 		
 		settings.getChildren().add(slowerButton);
 		settings.getChildren().add(fasterButton);
@@ -377,26 +317,27 @@ public class Visual extends Application {
 		stage.setMinHeight(jeu.getHeight()+layout.getHeight());
 		stage.centerOnScreen();
 		stage.setResizable(false);
-		displayGame();
 		stage.show();
 	}
 	
-	public static void displayGame() {
-		boolean[][] board = game.getBoard();
-		int blue = game.countAlive();
-		
-		for(int i=0; i<nbPV; i++) {
-			for(int j=0; j<nbPH; j++) {
-				if(board[i][j])
-					PixList[i][j].setFill(aliveColor);
-				else
-					PixList[i][j].setFill(deadColor);
-			}
+	/**
+	 * Removes the elements that will be resetted from the panes
+	 */
+	public static void destructWindow() {
+		while(jeu.getChildren().size() > 0) {
+			jeu.getChildren().remove(jeu.getChildren().get(0));
 		}
 		
-		score.setText("Step " + game.getNbSteps() + " alive : " + blue + " " + "dead : " + (nbPV*nbPH-blue));
+		while(plot.size()>0) {
+			plotWindow.getChildren().remove(plot.get(0));
+			plot.remove(0);
+		}
 	}
 	
+	/**
+	 * Displays the statistics adding a bar to the bar chart
+	 * if steps have been done
+	 */
 	public static void displayGraph() {
 		double width;
 		boolean newMax = false;
@@ -439,6 +380,9 @@ public class Visual extends Application {
 		maxCounted = max;
 	}
 	
+	/**
+	 * Accelerates the timer
+	 */
 	private static void faster() {
 		switch(speed) {
 		case (SMOOTHER): speed = ULTRASMOOTH; fasterButton.setDisable(true); break;
@@ -451,6 +395,9 @@ public class Visual extends Application {
 		timer.updateStep(speed);
 	}
 	
+	/**
+	 * Slows the timer
+	 */
 	private static void slower() {
 		switch(speed) {
 		case (NORMAL): speed = SLOW; slowerButton.setDisable(true); break;
@@ -463,20 +410,66 @@ public class Visual extends Application {
 		timer.updateStep(speed);
 	}
 	
+	/**
+	 * Restarts the game after resetting some variables
+	 */
 	private static void restart() {
+		destructWindow();
+		
+		timer.stop();
+		firstLaunch = true;
+		pause = false;
+		countedSteps = 0;
+		
 		try {
-			timer.stop();
-			firstLaunch = true;
 			nbPH = Integer.valueOf(XGetter.getText());
+			if(nbPH > 600) {
+				nbPH = 600;
+			}
 			nbPV = nbPH;
 			proba = Double.valueOf(PGetter.getText());
-			restart(stage);
 		} catch(Exception ex) {
 			XGetter.setText(""+nbPH);
 			PGetter.setText(""+proba);
 		}
+		
+		pixSize = 10;
+		if(pixSize*nbPV > Screen.getMainScreen().getHeight()-80)
+			pixSize = (Screen.getMainScreen().getHeight()-80)/nbPV;
+		if(pixSize*nbPH > Screen.getMainScreen().getWidth())
+			pixSize = Math.min(pixSize, (Screen.getMainScreen().getWidth())/nbPH);
+		dimX = nbPH*pixSize;
+		dimY = nbPV*pixSize+layout.getHeight()+settings.getHeight()+10;
+		
+		game.newGame(nbPV, nbPH, proba);
+		PixList = new Rectangle[nbPV][nbPH];
+		for(int i=0; i<nbPV; i++) {
+			for(int j=0; j<nbPH; j++) {
+				Rectangle r = new Rectangle();
+				r.setX(j*pixSize);
+				r.setY(i*pixSize);
+				r.setWidth(pixSize);
+				r.setHeight(pixSize);
+				r.setFill((game.getPix(j, i)?aliveColor:deadColor));
+				r.setId(""+i+" "+j);
+				r.addEventHandler(MouseEvent.ANY, new MouseHandler(r));
+				PixList[i][j] = r;
+				jeu.getChildren().add(PixList[i][j]);
+			}
+		}
+		
+		graphOOB = false;
+		countedSteps = 0;
+		maxCounted = 0;
+		
+		createWindow();
+		displayGame();
 	}
 	
+	/**
+	 * Changes the color of the pixels and graph circular way within the colorsets
+	 * @param modif the way to rotate the colors
+	 */
 	private static void changeColor(int modif) {
 		colorSet = (colorSet + modif) %nbColorSets;
 		if(colorSet == 0) {
@@ -496,30 +489,77 @@ public class Visual extends Application {
 			deadColor = Color.GREENYELLOW;
 		}
 		
-		for(int i=0; i<plot.size(); i++) {
-			plot.get(i).setFill(aliveColor);
-		}
-		
 		displayGame();
 		if(graph)
 			displayGraph();
 	}
 	
+	/**
+	 * Displays a little shortcuts window
+	 */
 	private static void displayHelp() {
-		timer.stop();
+		boolean wasRunning = timer.isRunning();
+		if(wasRunning)
+			timer.stop();
 		String helpText = "F / + : Faster\n";
 		helpText = helpText + "S / - : Slower\n";
 		helpText = helpText + "C : next Color\n";
 		helpText = helpText + "shift+C : previous Color\n";
+		helpText = helpText + "\n\n\n© CHANET Zoran";
 		Alert help = new Alert(Alert.AlertType.INFORMATION, helpText, ButtonType.OK);
 		help.setTitle("Help");
 		help.setHeaderText("Shortcuts");
 		help.showAndWait();
-		timer.start();
+		if(wasRunning)
+			timer.start();
 	}
-	
+
+	/**
+	 * Returns the boolean graph
+	 * @return if true, the statistics should be displayed
+	 */
 	public static boolean getGraph() {
 		return graph;
 	}
 	
+	/**
+	 * Returns the associated game
+	 * @return the associated game
+	 */
+	public static Game getGame() {
+		return game;
+	}
+	
+	/**
+	 * Returns the color of alive pixels
+	 * @return the color of alive pixels
+	 */
+	public static Color getAliveColor() {
+		return aliveColor;
+	}
+	
+	/**
+	 * Returns the color of dead pixels
+	 * @return the color of dead pixels
+	 */
+	public static Color getDeadColor() {
+		return deadColor;
+	}
+	
+	/**
+	 * Returns the size of the pixels
+	 * @return the size of the pixels
+	 */
+	public static int getPixSize() {
+		return pixSize;
+	}
+	
+	/**
+	 * Returns the number of pixels by side of the square
+	 * @return the number of pixels by side of the square
+	 */
+	public static int getNbPS() {
+		return nbPH;
+	}
+
 }

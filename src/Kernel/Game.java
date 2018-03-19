@@ -21,6 +21,7 @@ public class Game {
 	 * Creates a game with given numbers of columns and lines
 	 * @param nbC the number of columns to create
 	 * @param nbL the number of lines to create
+	 * @param proba the probability for pixels to be alive
 	 */
 	public Game(int nbL, int nbC, double proba) {
 		int aliveCount = 0;
@@ -36,8 +37,8 @@ public class Game {
 		}
 
 		
-		/* crée une forme au démarrage */
-		// A protéger en cas de dépassement des dimensions
+		/* Creating a form at start */
+		// TODO Protect for board dimensions
 //		board[(nbL/2)][(nbC/2)+1]=true;
 //		board[(nbL/2)+1][(nbC/2)+3]=true;
 //		board[(nbL/2)+2][(nbC/2)]=true;
@@ -46,7 +47,7 @@ public class Game {
 //		board[(nbL/2)+2][(nbC/2)+5]=true;
 //		board[(nbL/2)+2][(nbC/2)+6]=true;
 		
-		
+		/* Copying the current board to the save board */
 		for(int i=0; i<nbL; i++) {
 			for(int j=0; j<nbC; j++) {
 				if(board[i][j]) {
@@ -58,6 +59,7 @@ public class Game {
 		}
 		nbSteps = 0;
 		
+		/* Initializing the statistics */
 		stats = new ArrayList<Integer>();
 		stats.add(aliveCount);
 		maxAlive = aliveCount;
@@ -67,6 +69,7 @@ public class Game {
 	 * Computes the next step of the game
 	 */
 	public void step() {
+		/* Applying GoL rules */
 		for(int i=0; i<nbL; i++) {
 			for(int j=0; j<nbC; j++) {
 				int nhood = nbNeighbours(i,j);
@@ -74,11 +77,14 @@ public class Game {
 			}
 		}
 
+		/* Copying the current board to the save board */
 		for(int i=0; i<nbL; i++) {
 			for(int j=0; j<nbC; j++) {
 				lastBoard[i][j] = board[i][j];
 			}
 		}
+		
+		/* Updating statistics */
 		nbSteps++;
 		int aliveCount = countAlive();
 		stats.add(aliveCount);
@@ -122,14 +128,26 @@ public class Game {
 		return nbSteps;
 	}
 	
+	/**
+	 * Returns a clone of the last completed board
+	 * @return a clone of the last completed board
+	 */
 	public boolean[][] getBoard() {
 		return lastBoard.clone();
 	}
 	
+	/**
+	 * Returns the dimensions of the board
+	 * @return the number of lines
+	 */
 	public int getL() {
 		return nbL;
 	}
 	
+	/**
+	 * Returns the dimensions of the board
+	 * @return the number of columns
+	 */
 	public int getC() {
 		return nbC;
 	}
@@ -174,16 +192,29 @@ public class Game {
 		System.out.println(toString());
 	}
 	
+	/**
+	 * Sets the value of a pixel (true = alive)
+	 * @param x the x coordinate of the pixel
+	 * @param y the y coordinate of the pixel
+	 * @param alive the value of the pixel
+	 */
 	public void setPix(int x, int y, boolean alive) {
 		lastBoard[y][x] = alive;
 	}
 	
+	/**
+	 * Starts a new game without creating a new object
+	 * @param nbL the number of lines of the new board
+	 * @param nbC the number of columns of the new board
+	 * @param proba the the probability of being alive for the pixels in the new board
+	 */
 	public void newGame(int nbL, int nbC, double proba) {
+		int aliveCount = 0;
 		this.nbL = nbL;
 		this.nbC = nbC;
 		this.proba = proba;
-		this.board = new boolean[nbL][nbC];
-		this.lastBoard = new boolean[nbL][nbC];
+		board = new boolean[nbL][nbC];
+		lastBoard = new boolean[nbL][nbC];
 		for(int i=0; i<nbL; i++) {
 			for(int j=0; j<nbC; j++) {
 				board[i][j] = Math.random()<proba;
@@ -192,20 +223,42 @@ public class Game {
 
 		for(int i=0; i<nbL; i++) {
 			for(int j=0; j<nbC; j++) {
-				if(board[i][j])
+				if(board[i][j]) {
 					lastBoard[i][j] = true;
-				else
+					aliveCount++;
+				} else
 					lastBoard[i][j] = false;
 			}
 		}
 		nbSteps = 0;
+		stats.clear();
+		stats.add(aliveCount);
+		maxAlive = aliveCount;
 	}
 	
+	/**
+	 * Returns the statistics under array form
+	 * @return an array containing the number of alive cells per step
+	 */
 	public Integer[] getStats() {
 		return stats.toArray(new Integer[stats.size()]);
 	}
 	
+	/**
+	 * Returns the maximum of alive cells reached during the game
+	 * @return the maximum of alive cells reached during the game
+	 */
 	public int maxEver() {
 		return maxAlive;
+	}
+	
+	/**
+	 * Returns the value of the given pixel
+	 * @param x the x coordinate of the pixel
+	 * @param y the y coordinate of the pixel
+	 * @return the value of the pixel
+	 */
+	public boolean getPix(int x, int y) {
+		return lastBoard[y][x];
 	}
 }

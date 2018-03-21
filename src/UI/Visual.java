@@ -150,6 +150,15 @@ public class Visual extends Application {
 	 */
 	public static void createFields() {
 		plotWindow = new Pane();
+
+		try{
+			nbPH = (int)(Math.floor(Double.valueOf(XGetter.getText())));
+			if(nbPH > 600) {
+				nbPH = 600;
+			}
+			nbPV = nbPH;
+			proba = Double.valueOf(PGetter.getText());
+		} catch (Exception e) {}
 		
 		XGetter = new TextField(""+nbPH);
 		XGetter.setOnAction(new EventHandler<ActionEvent>() {
@@ -266,19 +275,6 @@ public class Visual extends Application {
 					
 			}
 		});
-	}
-	
-	/**
-	 * putting every bloc into place
-	 */
-	public static void createWindow() {
-		plotWindow.setMinWidth(dimX);
-		stage.setMinWidth(dimX);
-		stage.setMinHeight(dimY);
-		stage.setMaxWidth((dimX>layout.getWidth()?dimX:layout.getWidth()));
-		stage.setMaxHeight(dimY);
-		XGetter.setMaxWidth(55);
-		PGetter.setMaxWidth(55);
 		
 		getters.getChildren().add(XGetter);
 		getters.getChildren().add(PGetter);
@@ -294,8 +290,9 @@ public class Visual extends Application {
 		layout.setRight(getters);
 		layout.setBottom(settings);
 		settings.setAlignment(Pos.CENTER);
-		fenetre.setRight(jeu);
+		fenetre.setCenter(jeu);
 		fenetre.setBottom(layout);
+		fenetre.setMinWidth(Math.max(jeu.getWidth(), 2*settings.getWidth()));
 		root = new Group();
 		root.getChildren().add(fenetre);
 		scene = new Scene(root);
@@ -313,6 +310,12 @@ public class Visual extends Application {
 					changeColor(1);
 			}
 		});
+	}
+	
+	/**
+	 * putting every bloc into place
+	 */
+	public static void createWindow() {
 		stage.setScene(scene);
 		stage.setMinHeight(jeu.getHeight()+layout.getHeight());
 		stage.centerOnScreen();
@@ -325,7 +328,7 @@ public class Visual extends Application {
 	 */
 	public static void destructWindow() {
 		while(jeu.getChildren().size() > 0) {
-			jeu.getChildren().remove(jeu.getChildren().get(0));
+			jeu.getChildren().removeAll(jeu.getChildren());
 		}
 		
 		while(plot.size()>0) {
@@ -414,32 +417,20 @@ public class Visual extends Application {
 	 * Restarts the game after resetting some variables
 	 */
 	private static void restart() {
-		destructWindow();
-		
+//		destructWindow();
+		createFields();
 		timer.stop();
 		firstLaunch = true;
 		pause = false;
 		countedSteps = 0;
-		
-		try {
-			nbPH = Integer.valueOf(XGetter.getText());
-			if(nbPH > 600) {
-				nbPH = 600;
-			}
-			nbPV = nbPH;
-			proba = Double.valueOf(PGetter.getText());
-		} catch(Exception ex) {
-			XGetter.setText(""+nbPH);
-			PGetter.setText(""+proba);
-		}
-		
+
 		pixSize = 10;
 		if(pixSize*nbPV > Screen.getMainScreen().getHeight()-80)
 			pixSize = (Screen.getMainScreen().getHeight()-80)/nbPV;
 		if(pixSize*nbPH > Screen.getMainScreen().getWidth())
 			pixSize = Math.min(pixSize, (Screen.getMainScreen().getWidth())/nbPH);
 		dimX = nbPH*pixSize;
-		dimY = nbPV*pixSize+layout.getHeight()+settings.getHeight()+10;
+		dimY = nbPV*pixSize;
 		
 		game.newGame(nbPV, nbPH, proba);
 		PixList = new Rectangle[nbPV][nbPH];
@@ -454,7 +445,7 @@ public class Visual extends Application {
 				r.setId(""+i+" "+j);
 				r.addEventHandler(MouseEvent.ANY, new MouseHandler(r));
 				PixList[i][j] = r;
-				jeu.getChildren().add(PixList[i][j]);
+				jeu.getChildren().add(r);
 			}
 		}
 		
